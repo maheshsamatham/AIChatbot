@@ -1,0 +1,69 @@
+import tkinter as tk
+from tkinter import scrolledtext
+import pandas as pd
+import nltk
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+
+# Load processed data from Module-1
+processed_data = pd.read_csv('processed_questions_answers.csv')
+
+# Function to preprocess user input
+def preprocess_question(question):
+    tokens = word_tokenize(question)
+    stop_words = set(stopwords.words('english'))
+    filtered_tokens = [word for word in tokens if word.lower() not in stop_words]
+    lemmatizer = WordNetLemmatizer()
+    pos_tags = nltk.pos_tag(filtered_tokens)
+    lemmatized_tokens = [lemmatizer.lemmatize(word, pos=get_wordnet_pos(tag)) for word, tag in pos_tags]
+    processed_question = '-'.join(lemmatized_tokens)
+    return processed_question
+
+def get_wordnet_pos(tag):
+    if tag.startswith('J'):
+        return 'a'  # Adjective
+    elif tag.startswith('V'):
+        return 'v'  # Verb
+    elif tag.startswith('N'):
+        return 'n'  # Noun
+    elif tag.startswith('R'):
+        return 'r'  # Adverb
+    else:
+        return 'n'  # Default to noun
+
+# Function to find answer from processed data
+def find_answer(processed_question):
+    matched_row = processed_data[processed_data['processed_questions'] == processed_question]
+    if not matched_row.empty:
+        return matched_row.iloc[0]['answers']
+    else:
+        return "Sorry, I couldn't find an answer to your question."
+
+# Function to handle user input
+def get_answer():
+    user_input = input_field.get("1.0", tk.END)
+    processed_input = preprocess_question(user_input)
+    answer = find_answer(processed_input)
+    output_field.insert(tk.END, "You: " + user_input + "\n")
+    output_field.insert(tk.END, "Bot: " + answer + "\n")
+    input_field.delete("1.0", tk.END)
+
+# Create the main window
+root = tk.Tk()
+root.title("Chatbot Interface")
+
+# Input field for user to enter questions
+input_field = scrolledtext.ScrolledText(root, width=50, height=5)
+input_field.pack(padx=10, pady=10)
+
+# Button to submit user input
+submit_button = tk.Button(root, text="Submit", command=get_answer)
+submit_button.pack(pady=5)
+
+# Output field to display conversation
+output_field = scrolledtext.ScrolledText(root, width=50, height=10)
+output_field.pack(padx=10, pady=10)
+
+# Start the application
+root.mainloop()
