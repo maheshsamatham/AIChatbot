@@ -1,0 +1,63 @@
+import pandas as pd
+
+# Step 1: Ask the User a Question
+def ask_user():
+    user_question = input("Please enter your question: ")
+    return user_question
+
+# Step 2: Preprocess the Question
+def preprocess_question(user_question):
+    # Tokenize
+    tokens = word_tokenize(user_question)
+    
+    # Remove stopwords
+    stop_words = set(stopwords.words('english'))
+    cleaned_tokens = [token for token in tokens if token.lower() not in stop_words]
+    
+    # Lemmatize
+    pos_tags = nltk.pos_tag(cleaned_tokens)
+    lemmatized_tokens = []
+    lemmatizer = WordNetLemmatizer()
+    for word, pos in pos_tags:
+        if pos.startswith('J'):
+            lemmatized_word = lemmatizer.lemmatize(word, 'a')
+        elif pos.startswith('V'):
+            lemmatized_word = lemmatizer.lemmatize(word, 'v')
+        elif pos.startswith('N'):
+            lemmatized_word = lemmatizer.lemmatize(word, 'n')
+        elif pos.startswith('R'):
+            lemmatized_word = lemmatizer.lemmatize(word, 'r')
+        else:
+            lemmatized_word = word
+        lemmatized_tokens.append(lemmatized_word)
+    
+    # Combine tokens
+    preprocessed_question = '-'.join(lemmatized_tokens)
+    return preprocessed_question
+
+# Step 3: Find the Answer from Output CSV File
+def find_answer(preprocessed_question):
+    try:
+        data = pd.read_csv('output.csv')
+        answer = data.loc[data['Question'] == preprocessed_question, 'Answer'].values[0]
+        return answer
+    except Exception as e:
+        print(f"Error finding answer: {e}")
+        return None
+
+# Step 4: Display Output
+def display_answer(answer):
+    if answer:
+        print("Answer:", answer)
+    else:
+        print("Sorry, could not find an answer to your question.")
+
+# Main function for Module-2
+def interact_with_user():
+    user_question = ask_user()
+    preprocessed_question = preprocess_question(user_question)
+    answer = find_answer(preprocessed_question)
+    display_answer(answer)
+
+# Example usage for Module-2
+interact_with_user()
