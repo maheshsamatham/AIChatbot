@@ -1,0 +1,90 @@
+import pandas as pd
+import nltk
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+
+# Ensure necessary NLTK resources are downloaded
+nltk.download('punkt')
+nltk.download('stopwords')
+nltk.download('wordnet')
+nltk.download('averaged_perceptron_tagger')
+
+# Step 1: Read the CSV File
+def read_csv(file_path):
+    try:
+        data = pd.read_csv(file_path)
+        return data
+    except Exception as e:
+        print(f"Error reading CSV: {e}")
+
+# Step 2: Apply Word Tokenization
+def tokenize_questions(data):
+    tokenized_questions = []
+    for question in data.iloc[:, 0]:
+        tokens = word_tokenize(question)
+        tokenized_questions.append(tokens)
+    return tokenized_questions
+
+# Step 3: Remove Stopwords
+def remove_stopwords(tokenized_questions):
+    stop_words = set(stopwords.words('english'))
+    cleaned_questions = []
+    for tokens in tokenized_questions:
+        cleaned_tokens = [token for token in tokens if token.lower() not in stop_words]
+        cleaned_questions.append(cleaned_tokens)
+    return cleaned_questions
+
+# Step 4: Apply Lemmatization with POS Tagging
+def lemmatize_tokens(cleaned_questions):
+    lemmatizer = WordNetLemmatizer()
+    lemmatized_questions = []
+    for tokens in cleaned_questions:
+        pos_tags = nltk.pos_tag(tokens)
+        lemmatized_tokens = []
+        for word, pos in pos_tags:
+            if pos.startswith('J'):
+                lemmatized_word = lemmatizer.lemmatize(word, 'a')
+            elif pos.startswith('V'):
+                lemmatized_word = lemmatizer.lemmatize(word, 'v')
+            elif pos.startswith('N'):
+                lemmatized_word = lemmatizer.lemmatize(word, 'n')
+            elif pos.startswith('R'):
+                lemmatized_word = lemmatizer.lemmatize(word, 'r')
+            else:
+                lemmatized_word = word
+            lemmatized_tokens.append(lemmatized_word)
+        lemmatized_questions.append(lemmatized_tokens)
+    return lemmatized_questions
+
+# Step 5: Combine Words with a Hyphen
+def combine_tokens(lemmatized_questions):
+    combined_questions = []
+    for tokens in lemmatized_questions:
+        combined_question = '-'.join(tokens)
+        combined_questions.append(combined_question)
+    return combined_questions
+
+# Step 6: Map Respective Answers
+def map_answers(data, combined_questions):
+    answers = data.iloc[:, 1].tolist()
+    question_answer_map = dict(zip(combined_questions, answers))
+    return question_answer_map
+
+# Step 7: Store Results in Output CSV File
+def save_to_csv(question_answer_map):
+    df = pd.DataFrame(list(question_answer_map.items()), columns=['Question', 'Answer'])
+    df.to_csv('output.csv', index=False)
+
+# Main function for Module-1
+def process_data(file_path):
+    data = read_csv(file_path)
+    tokenized_questions = tokenize_questions(data)
+    cleaned_questions = remove_stopwords(tokenized_questions)
+    lemmatized_questions = lemmatize_tokens(cleaned_questions)
+    combined_questions = combine_tokens(lemmatized_questions)
+    question_answer_map = map_answers(data, combined_questions)
+    save_to_csv(question_answer_map)
+
+# Example usage for Module-1
+process_data('input.csv')
